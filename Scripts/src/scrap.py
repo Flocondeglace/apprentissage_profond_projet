@@ -5,6 +5,9 @@ import requests
 import sys
 import shutil
 import os
+from os import listdir
+from os.path import isfile, join
+import re
 
 
 def scrap_images(URL) :
@@ -14,7 +17,7 @@ def scrap_images(URL) :
 
     return soup.find_all("img")
 
-def extract_images(URL,images,folder_name) :
+def extract_images(URL,images,folder_name,img_number) :
     total_images = len(images)
     scrapped_images = 0
     print(f"---Extracting {total_images} images--")
@@ -31,7 +34,7 @@ def extract_images(URL,images,folder_name) :
             print(f"extracting images :{url_ext}...")
             if r.status_code == 200:
                 print("status code : OK")
-                with open(f"src/scraped/{folder_name}/{folder_name}{scrapped_images}.png", 'wb') as f: 
+                with open(f"src/scraped/{folder_name}/{folder_name}{img_number + scrapped_images}.png", 'wb') as f: 
                     r.raw.decode_content = True
                     shutil.copyfileobj(r.raw, f)
                     print(f"Images : {url_ext} copied in folder as image{i}.png")
@@ -48,16 +51,20 @@ def main() :
     URL = sys.argv[1]
     folder_name = sys.argv[2]
     print(f"Exctracting from URL : {URL}...")
-    create_folder(folder_name)
-    extract_images(URL,scrap_images(URL),folder_name)
+    img_number = create_folder(folder_name)
+    print(img_number)
+    extract_images(URL,scrap_images(URL),folder_name,img_number)
 
 def create_folder(folder_name) :
-    if not os.path.exists(f"src/scraped/{folder_name}"):
-        os.makedirs(f"src/scraped/{folder_name}")
+    path = f"src/scraped/{folder_name}"
+    if not os.path.exists(path):
+        os.makedirs(path)
         print(f"Folder {folder_name} created")
+        return 0
     else :
         print(f"Folder {folder_name} already exists")
-
+        onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+        return sorted(map(lambda x: int(re.search("\d+", x).group()), onlyfiles))[-1]
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
