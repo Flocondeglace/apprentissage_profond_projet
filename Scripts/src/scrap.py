@@ -5,7 +5,16 @@ import requests
 import sys
 import shutil
 import os
+from os import listdir
+from os.path import isfile, join
+import re
 
+### scrap.py ###
+# download all images from a webpage, which name contains a given string.
+# usage: py .\scrap.py URL NAME WAIT_TIME
+# URL: url of the webpage
+# NAME: only images containing this string will be downloaded
+# WAIT_TIME: time to wait between each download (in seconds)
 
 def scrap_images(URL) :
     print("Making the soup...")
@@ -14,7 +23,7 @@ def scrap_images(URL) :
 
     return soup.find_all("img")
 
-def extract_images(URL,images,folder_name) :
+def extract_images(URL,images,folder_name,img_number, wait_time) :
     total_images = len(images)
     scrapped_images = 0
     print(f"---Extracting {total_images} images--")
@@ -25,13 +34,13 @@ def extract_images(URL,images,folder_name) :
             scrapped_images += 1
             print(f"Image {url_ext} contains {folder_name} in its name, extracting...")
             full_url = urljoin(URL, url_ext)
-            print(f"Requesting {full_url}, waiting for 4 seconds")
-            sleep(4)
+            print(f"Requesting {full_url}, waiting for {wait_time} seconds")
+            sleep(int(wait_time))
             r = requests.get(full_url, stream=True) 
             print(f"extracting images :{url_ext}...")
             if r.status_code == 200:
                 print("status code : OK")
-                with open(f"src/scraped/{folder_name}/{folder_name}{scrapped_images}.png", 'wb') as f: 
+                with open(f"scraped/{folder_name}/{folder_name}{img_number + scrapped_images}.png", 'wb') as f: 
                     r.raw.decode_content = True
                     shutil.copyfileobj(r.raw, f)
                     print(f"Images : {url_ext} copied in folder as image{i}.png")
@@ -45,19 +54,33 @@ def extract_images(URL,images,folder_name) :
 
     
 def main() :
-    URL = sys.argv[1]
-    folder_name = sys.argv[2]
-    print(f"Exctracting from URL : {URL}...")
-    create_folder(folder_name)
-    extract_images(URL,scrap_images(URL),folder_name)
+    if len(sys.argv) == 4:
+        URL = sys.argv[1]
+        folder_name = sys.argv[2]
+        wait_time = sys.argv[3]
+        print(f"Exctracting from URL : {URL}...")
+        img_number = create_folder(folder_name)
+        print(img_number)
+        extract_images(URL,scrap_images(URL),folder_name,img_number, wait_time)
+    else:
+        print("### scrap.py ###")
+        print("# download all images from a webpage, which name contains a given string.")
+        print("# usage: py .\\scrap.py URL NAME WAIT_TIME")
+        print("# URL: url of the webpage")
+        print("# NAME: only images containing this string will be downloaded")
+        print("# WAIT_TIME: time to wait between each download (in seconds)")
+        
 
 def create_folder(folder_name) :
-    if not os.path.exists(f"src/scraped/{folder_name}"):
-        os.makedirs(f"src/scraped/{folder_name}")
+    path = f"scraped/{folder_name}"
+    if not os.path.exists(path):
+        os.makedirs(path)
         print(f"Folder {folder_name} created")
+        return 0
     else :
         print(f"Folder {folder_name} already exists")
-
+        onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
+        return sorted(map(lambda x: int(re.search("\\d+", x).group()), onlyfiles))[-1]
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
