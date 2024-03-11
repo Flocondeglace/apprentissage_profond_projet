@@ -11,7 +11,7 @@ def main():
         prefix = sys.argv[2]
 
         list_dir = os.listdir(folder_path)
-        folder_prefix = folder_path + "\\"
+        folder_prefix = folder_path + "/"
         for i in range(len(list_dir)):
             img = list_dir[i]
             img_ext = os.path.splitext(img)
